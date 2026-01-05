@@ -1,11 +1,11 @@
 {
-  "name": "Example Plugin",
-  "author": "John Doe",
-  "flags": ["debug", "_root"],
+  "name": "Speed Test",
+  "author": "Chris Garson",
+  "flags": ["debug"],
   "api_version": 1,
   "publish": {
-    "tags": ["template", "root"],
-    "description": "Decky example plugin.",
+    "tags": ["network", "speed", "utility"],
+    "description": "Run internet speed tests directly from your Steam Deck Game Mode using Cloudflare's global network.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }
