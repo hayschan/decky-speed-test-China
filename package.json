@@ -1,6 +1,6 @@
 {
   "name": "decky-speed-test",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Run internet speed tests directly from your Steam Deck Game Mode using Cloudflare's global network.",
   "type": "module",
   "scripts": {

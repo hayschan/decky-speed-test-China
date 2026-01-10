@@ -6,6 +6,6 @@
   "publish": {
     "tags": ["network", "speed", "utility"],
     "description": "Run internet speed tests directly from your Steam Deck Game Mode using Cloudflare's global network.",
-    "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
+    "image": "https://github.com/Dukeman330/decky-speed-test/blob/main/assets/screenshot.jpg"
   }
 }
