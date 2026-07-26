@@ -35,7 +35,7 @@ import {
   getChartData,
 } from './speedtest';
 
-const PLUGIN_VERSION = '2.0.3';
+const PLUGIN_VERSION = '2.0.4';
 
 const phaseLabels: Record<TestPhase, string> = {
   idle: '准备测速',
@@ -239,6 +239,18 @@ function Content() {
     <div>
       <PanelSection title="网络测速">
         <PanelSectionRow>
+          <ButtonItem
+            layout="below"
+            onClick={status === 'running' ? stopTest : startTest}>
+            {status === 'running'
+              ? '停止测速'
+              : status === 'finished' || status === 'error'
+                ? '重新测速'
+                : '开始测速'}
+          </ButtonItem>
+        </PanelSectionRow>
+
+        <PanelSectionRow>
           <div style={{ width: '100%' }}>
             <div
               style={{
@@ -360,17 +372,6 @@ function Content() {
           </PanelSectionRow>
         )}
 
-        <PanelSectionRow>
-          <ButtonItem
-            layout="below"
-            onClick={status === 'running' ? stopTest : startTest}>
-            {status === 'running'
-              ? '停止测速'
-              : status === 'finished' || status === 'error'
-                ? '重新测速'
-                : '开始测速'}
-          </ButtonItem>
-        </PanelSectionRow>
       </PanelSection>
 
       <SettingsView

@@ -507,16 +507,30 @@ export const SettingsView: FC<{
   );
 };
 
-const HistoryMetric: FC<{ label: string; value: number | null; unit: string }> = ({
-  label,
-  value,
-  unit,
-}) => (
+const HistoryMetric: FC<{
+  label: string;
+  value: number | null;
+  unit: string;
+  focused: boolean;
+}> = ({ label, value, unit, focused }) => (
   <div style={{ minWidth: 0 }}>
-    <div style={{ fontSize: '10px', color: COLORS.muted }}>{label}</div>
-    <div style={{ marginTop: '2px', fontSize: '17px', fontWeight: 700 }}>
+    <div style={{ fontSize: '10px', color: focused ? '#d9edff' : COLORS.muted }}>
+      {label}
+    </div>
+    <div
+      style={{
+        marginTop: '2px',
+        fontSize: '17px',
+        fontWeight: 700,
+        color: focused ? '#ffffff' : '#f2f3f5',
+      }}>
       {unit === 'Mbps' ? formatSpeed(value) : formatLatency(value)}
-      <span style={{ marginLeft: '3px', color: COLORS.muted, fontSize: '10px' }}>
+      <span
+        style={{
+          marginLeft: '3px',
+          color: focused ? '#c5e4ff' : COLORS.muted,
+          fontSize: '10px',
+        }}>
         {unit}
       </span>
     </div>
@@ -528,6 +542,7 @@ export const HistoryView: FC<{
   loading: boolean;
 }> = ({ history, loading }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
 
   if (loading) {
     return <PanelSection title="历史记录" spinner />;
@@ -554,82 +569,129 @@ export const HistoryView: FC<{
 
   return (
     <PanelSection title={`历史记录 · ${history.length}`}>
-      {history.map((record) => {
+      {history.map((record, index) => {
         const isExpanded = expandedId === record.id;
+        const isFocused = focusedId === record.id;
         const successfulNodes = record.nodes.filter((node) => node.status === 'success');
         return (
           <PanelSectionRow key={record.id}>
-            <DialogButton
-              onClick={() => setExpandedId(isExpanded ? null : record.id)}
+            <div
               style={{
                 width: '100%',
-                height: 'auto',
-                minHeight: '82px',
-                padding: '11px 12px',
-                textAlign: 'left',
-                background: COLORS.card,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: '8px',
+                paddingBottom: index === history.length - 1 ? 0 : '9px',
               }}>
-              <div style={{ width: '100%' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}>
-                  <span style={{ fontSize: '11px', color: COLORS.muted }}>
-                    {formatMeasuredAt(record.measuredAt)}
-                  </span>
-                  <StatusPill tone={record.mode === 'average' ? 'blue' : 'neutral'}>
-                    {record.mode === 'average'
-                      ? `${successfulNodes.length} 节点平均`
-                      : SERVER_BY_ID[record.serverIds[0]]?.shortName ?? '单节点'}
-                  </StatusPill>
-                </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr 0.8fr',
-                    gap: '8px',
-                    marginTop: '10px',
-                  }}>
-                  <HistoryMetric label="下载" value={record.download} unit="Mbps" />
-                  <HistoryMetric label="上传" value={record.upload} unit="Mbps" />
-                  <HistoryMetric label="延迟" value={record.latency} unit="ms" />
-                </div>
-
-                {isExpanded && (
+              <DialogButton
+                onClick={() => {
+                  setFocusedId(record.id);
+                  setExpandedId(isExpanded ? null : record.id);
+                }}
+                onGamepadFocus={() => setFocusedId(record.id)}
+                onGamepadBlur={() =>
+                  setFocusedId((current) => (current === record.id ? null : current))
+                }
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  minHeight: '82px',
+                  padding: '11px 12px',
+                  textAlign: 'left',
+                  color: isFocused ? '#ffffff' : '#f2f3f5',
+                  background: isFocused ? 'rgba(26, 159, 255, 0.20)' : COLORS.card,
+                  border: isFocused
+                    ? `2px solid ${COLORS.blue}`
+                    : `1px solid ${COLORS.border}`,
+                  borderRadius: '8px',
+                  boxShadow: isFocused
+                    ? '0 0 0 2px rgba(26, 159, 255, 0.16)'
+                    : 'none',
+                  transition: 'background 120ms ease, border 120ms ease, box-shadow 120ms ease',
+                }}>
+                <div style={{ width: '100%' }}>
                   <div
                     style={{
-                      marginTop: '11px',
-                      paddingTop: '9px',
-                      borderTop: `1px solid ${COLORS.border}`,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '8px',
                     }}>
-                    {record.nodes.map((node) => (
-                      <div
-                        key={node.serverId}
-                        style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1.2fr 0.8fr 0.8fr',
-                          gap: '6px',
-                          marginTop: '5px',
-                          fontSize: '10px',
-                          color: node.status === 'error' ? COLORS.red : '#d7d9dd',
-                        }}>
-                        <span>
-                          {SERVER_BY_ID[node.serverId].shortName} ·{' '}
-                          {formatProtocol(node.protocol)}
-                        </span>
-                        <span>↓ {formatSpeed(node.download)}</span>
-                        <span>↑ {formatSpeed(node.upload)}</span>
-                      </div>
-                    ))}
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        color: isFocused ? '#d9edff' : COLORS.muted,
+                      }}>
+                      {formatMeasuredAt(record.measuredAt)}
+                    </span>
+                    <StatusPill tone={record.mode === 'average' ? 'blue' : 'neutral'}>
+                      {record.mode === 'average'
+                        ? `${successfulNodes.length} 节点平均`
+                        : SERVER_BY_ID[record.serverIds[0]]?.shortName ?? '单节点'}
+                    </StatusPill>
                   </div>
-                )}
-              </div>
-            </DialogButton>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr 0.8fr',
+                      gap: '8px',
+                      marginTop: '10px',
+                    }}>
+                    <HistoryMetric
+                      label="下载"
+                      value={record.download}
+                      unit="Mbps"
+                      focused={isFocused}
+                    />
+                    <HistoryMetric
+                      label="上传"
+                      value={record.upload}
+                      unit="Mbps"
+                      focused={isFocused}
+                    />
+                    <HistoryMetric
+                      label="延迟"
+                      value={record.latency}
+                      unit="ms"
+                      focused={isFocused}
+                    />
+                  </div>
+
+                  {isExpanded && (
+                    <div
+                      style={{
+                        marginTop: '11px',
+                        paddingTop: '9px',
+                        borderTop: `1px solid ${
+                          isFocused ? 'rgba(217, 237, 255, 0.28)' : COLORS.border
+                        }`,
+                      }}>
+                      {record.nodes.map((node) => (
+                        <div
+                          key={node.serverId}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1.2fr 0.8fr 0.8fr',
+                            gap: '6px',
+                            marginTop: '5px',
+                            fontSize: '10px',
+                            color:
+                              node.status === 'error'
+                                ? COLORS.red
+                                : isFocused
+                                  ? '#eef7ff'
+                                  : '#d7d9dd',
+                          }}>
+                          <span>
+                            {SERVER_BY_ID[node.serverId].shortName} ·{' '}
+                            {formatProtocol(node.protocol)}
+                          </span>
+                          <span>↓ {formatSpeed(node.download)}</span>
+                          <span>↑ {formatSpeed(node.upload)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </DialogButton>
+            </div>
           </PanelSectionRow>
         );
       })}
