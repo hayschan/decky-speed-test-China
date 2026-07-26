@@ -8,6 +8,7 @@ import json
 import os
 import re
 import secrets
+import ssl
 import statistics
 import threading
 import time
@@ -25,8 +26,15 @@ _USER_AGENT = (
     "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 "
     "Decky-University-Speedtest/2.0"
 )
-_REQUEST_TIMEOUT_SECONDS = 20
+_HTTPS_TIMEOUT_SECONDS = 30
+_NUAA_TIMEOUT_SECONDS = 8
 _MAX_HISTORY_RECORDS = 50
+_SYSTEM_CA_BUNDLE_PATHS = (
+    "/etc/ssl/certs/ca-certificates.crt",
+    "/etc/ssl/cert.pem",
+    "/etc/pki/tls/certs/ca-bundle.crt",
+    "/etc/ssl/ca-bundle.pem",
+)
 
 _SERVERS = {
     "ustc": {
@@ -74,12 +82,25 @@ def _extract_script_data(page: str, element_id: str) -> str | None:
     return None
 
 
+def _create_ssl_context() -> ssl.SSLContext:
+    for path in _SYSTEM_CA_BUNDLE_PATHS:
+        if os.path.isfile(path):
+            return ssl.create_default_context(cafile=path)
+    return ssl.create_default_context()
+
+
 class _NetworkSession:
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
+        self.timeout_seconds = (
+            _NUAA_TIMEOUT_SECONDS
+            if base_url.startswith("http://speed.nuaa.edu.cn/")
+            else _HTTPS_TIMEOUT_SECONDS
+        )
         self.cookie_jar = http.cookiejar.CookieJar()
         self.opener = urllib.request.build_opener(
-            urllib.request.HTTPCookieProcessor(self.cookie_jar)
+            urllib.request.HTTPCookieProcessor(self.cookie_jar),
+            urllib.request.HTTPSHandler(context=_create_ssl_context()),
         )
         self._ready = False
         self._ready_lock = threading.Lock()
@@ -94,7 +115,7 @@ class _NetworkSession:
 
             request = self._request(self.base_url)
             try:
-                with self.opener.open(request, timeout=_REQUEST_TIMEOUT_SECONDS) as response:
+                with self.opener.open(request, timeout=self.timeout_seconds) as response:
                     body = response.read(2_000_000)
                     final_url = response.geturl()
             except urllib.error.HTTPError as error:
@@ -113,9 +134,10 @@ class _NetworkSession:
         *,
         data: bytes | None = None,
         headers: dict[str, str] | None = None,
+        timeout: int | None = None,
     ) -> Any:
         request = self._request(url, data=data, headers=headers)
-        return self.opener.open(request, timeout=_REQUEST_TIMEOUT_SECONDS)
+        return self.opener.open(request, timeout=timeout or self.timeout_seconds)
 
     def _request(
         self,
@@ -173,7 +195,7 @@ class _NetworkSession:
 
         with self.opener.open(
             self._request(f"{pass_url}?{query}"),
-            timeout=_REQUEST_TIMEOUT_SECONDS,
+            timeout=self.timeout_seconds,
         ) as response:
             body = response.read(2_000_000)
             final_url = response.geturl()
@@ -328,7 +350,7 @@ class Plugin:
 
     async def measure_latency(self, server_id: str, protocol: str) -> dict[str, Any]:
         return await self._run_in_thread(
-            self._measure_latency_sync, server_id, protocol, 8
+            self._measure_latency_sync, server_id, protocol, 3
         )
 
     async def measure_download_sample(

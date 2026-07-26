@@ -1,13 +1,13 @@
 {
   "name": "decky-speed-test-china",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Test Steam Deck network performance with university-hosted speed test nodes in mainland China.",
   "type": "module",
   "scripts": {
     "build": "rollup -c --forceExit",
     "package": "bash scripts/package-release.sh",
     "watch": "rollup -c -w",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "python3 -m unittest discover -s tests -v"
   },
   "repository": {
     "type": "git",

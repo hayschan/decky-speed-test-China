@@ -1,10 +1,10 @@
 import {
   DialogButton,
   DropdownItem,
-  Focusable,
   PanelSection,
   PanelSectionRow,
   ProgressBar,
+  SliderField,
   ToggleField,
 } from '@decky/ui';
 import { FC, useEffect, useRef, useState } from 'react';
@@ -16,7 +16,6 @@ import {
   SERVER_DEFINITIONS,
   ServerId,
   SpeedMetrics,
-  ViewId,
   formatLatency,
   formatMeasuredAt,
   formatProtocol,
@@ -301,45 +300,6 @@ export const MetricsGrid: FC<{
   </PanelSectionRow>
 );
 
-const tabs: Array<{ id: ViewId; label: string }> = [
-  { id: 'test', label: '测速' },
-  { id: 'history', label: '历史' },
-  { id: 'settings', label: '设置' },
-];
-
-export const ViewTabs: FC<{
-  selected: ViewId;
-  onChange(view: ViewId): void;
-}> = ({ selected, onChange }) => (
-  <Focusable
-    style={{
-      display: 'flex',
-      gap: '6px',
-      padding: '0 12px 10px',
-    }}>
-    {tabs.map((tab) => {
-      const isSelected = selected === tab.id;
-      return (
-        <DialogButton
-          key={tab.id}
-          onClick={() => onChange(tab.id)}
-          style={{
-            flex: 1,
-            minWidth: 0,
-            height: '36px',
-            padding: '0 8px',
-            fontSize: '12px',
-            fontWeight: isSelected ? 700 : 500,
-            color: isSelected ? '#ffffff' : '#c7cbd1',
-            background: isSelected ? COLORS.blue : COLORS.card,
-          }}>
-          {tab.label}
-        </DialogButton>
-      );
-    })}
-  </Focusable>
-);
-
 export const StatusPill: FC<{
   children: string;
   tone?: 'neutral' | 'blue' | 'green' | 'red';
@@ -372,16 +332,8 @@ export const StatusPill: FC<{
   );
 };
 
-const protocolOptions = [
-  { data: 'auto', label: '自动选择' },
-  { data: 'ipv4', label: 'IPv4' },
-  { data: 'ipv6', label: 'IPv6' },
-];
-
-const modeOptions = [
-  { data: 'single', label: '单节点' },
-  { data: 'average', label: '多节点平均' },
-];
+const protocolValues: NetworkProtocol[] = ['auto', 'ipv4', 'ipv6'];
+const modeValues = ['single', 'average'] as const;
 
 const serverOptions = SERVER_DEFINITIONS.map((server) => ({
   data: server.id,
@@ -436,25 +388,31 @@ export const SettingsView: FC<{
     });
   };
 
-  const availableProtocolOptions =
-    preferences.mode === 'single' && preferences.singleServer === 'nuaa'
-      ? protocolOptions.filter((option) => option.data === 'auto')
-      : protocolOptions;
-
   return (
     <>
       <PanelSection title="测速方式">
-        <DropdownItem
+        <SliderField
           label="结果方式"
           description={
             preferences.mode === 'average'
               ? '依次测试所选节点，再计算成功结果的平均值'
               : '使用一个指定节点完成测速'
           }
-          rgOptions={modeOptions}
-          selectedOption={preferences.mode}
+          value={modeValues.indexOf(preferences.mode)}
+          min={0}
+          max={1}
+          step={1}
+          notchCount={2}
+          notchLabels={[
+            { notchIndex: 0, label: '单节点', value: 0 },
+            { notchIndex: 1, label: '多节点平均', value: 1 },
+          ]}
+          notchTicksVisible
+          showValue={false}
+          validValues="steps"
+          minimumDpadGranularity={1}
           disabled={disabled}
-          onChange={(option) => update({ mode: option.data })}
+          onChange={(value) => update({ mode: modeValues[Math.round(value)] })}
         />
 
         {preferences.mode === 'single' ? (
@@ -483,17 +441,34 @@ export const SettingsView: FC<{
           ))
         )}
 
-        <DropdownItem
+        <SliderField
           label="网络协议"
           description={
-            preferences.protocol === 'auto'
+            preferences.mode === 'single' && preferences.singleServer === 'nuaa'
+              ? '南航站点只能使用自动线路'
+              : preferences.protocol === 'auto'
               ? '优先使用各节点的 IPv4 线路'
               : `强制使用 ${formatProtocol(preferences.protocol)} 线路`
           }
-          rgOptions={availableProtocolOptions}
-          selectedOption={preferences.protocol}
-          disabled={disabled}
-          onChange={(option) => updateProtocol(option.data)}
+          value={protocolValues.indexOf(preferences.protocol)}
+          min={0}
+          max={2}
+          step={1}
+          notchCount={3}
+          notchLabels={[
+            { notchIndex: 0, label: '自动', value: 0 },
+            { notchIndex: 1, label: 'IPv4', value: 1 },
+            { notchIndex: 2, label: 'IPv6', value: 2 },
+          ]}
+          notchTicksVisible
+          showValue={false}
+          validValues="steps"
+          minimumDpadGranularity={1}
+          disabled={
+            disabled ||
+            (preferences.mode === 'single' && preferences.singleServer === 'nuaa')
+          }
+          onChange={(value) => updateProtocol(protocolValues[Math.round(value)])}
         />
 
         {saveError && (

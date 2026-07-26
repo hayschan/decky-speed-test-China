@@ -15,7 +15,6 @@ import {
   PhaseProgress,
   SettingsView,
   StatusPill,
-  ViewTabs,
 } from './components';
 import {
   DEFAULT_PREFERENCES,
@@ -26,7 +25,6 @@ import {
   SpeedTestResult,
   TestPhase,
   TestStatus,
-  ViewId,
   createEmptyResult,
   formatMeasuredAt,
   formatProtocol,
@@ -37,7 +35,7 @@ import {
   getChartData,
 } from './speedtest';
 
-const PLUGIN_VERSION = '2.0.2';
+const PLUGIN_VERSION = '2.0.3';
 
 const phaseLabels: Record<TestPhase, string> = {
   idle: '准备测速',
@@ -48,7 +46,6 @@ const phaseLabels: Record<TestPhase, string> = {
 };
 
 function Content() {
-  const [view, setView] = useState<ViewId>('test');
   const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [preferencesReady, setPreferencesReady] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -67,7 +64,6 @@ function Content() {
   const engineRef = useRef<UniversitySpeedTest | null>(null);
   const preferencesRevisionRef = useRef(0);
   const componentMountedRef = useRef(true);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -97,10 +93,6 @@ function Content() {
       engineRef.current?.stop();
     };
   }, []);
-
-  useEffect(() => {
-    containerRef.current?.scrollIntoView({ block: 'start' });
-  }, [view]);
 
   const persistHistory = useCallback((completedResult: SpeedTestResult) => {
     const record: HistoryRecord = {
@@ -216,6 +208,10 @@ function Content() {
   const uploadChart = useMemo(() => getChartData(result, 'upload'), [result]);
   const successfulNodes = countSuccessfulNodes(result);
   const failedNodes = result.nodes.filter((node) => node.status === 'error').length;
+  const failedNodeNames = result.nodes
+    .filter((node) => node.status === 'error')
+    .map((node) => SERVER_BY_ID[node.serverId].shortName)
+    .join('、');
 
   const selectedServerLabel = useMemo(() => {
     if (status === 'running' && currentServerId) {
@@ -240,63 +236,61 @@ function Content() {
   }
 
   return (
-    <div ref={containerRef}>
-      <ViewTabs selected={view} onChange={setView} />
-
-      {view === 'test' && (
-        <PanelSection>
-          <PanelSectionRow>
-            <div style={{ width: '100%' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                  gap: '8px',
-                }}>
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{ fontSize: '11px', color: COLORS.muted, marginBottom: '3px' }}>
-                    {status === 'running' ? '当前测速节点' : '测速节点'}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}>
-                    {selectedServerLabel}
-                  </div>
+    <div>
+      <PanelSection title="网络测速">
+        <PanelSectionRow>
+          <div style={{ width: '100%' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: '8px',
+              }}>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{ fontSize: '11px', color: COLORS.muted, marginBottom: '3px' }}>
+                  {status === 'running' ? '当前测速节点' : '测速节点'}
                 </div>
                 <div
                   style={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    flexWrap: 'wrap',
-                    gap: '5px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}>
-                  <StatusPill tone={preferences.mode === 'average' ? 'blue' : 'neutral'}>
-                    {preferences.mode === 'average' ? '多节点平均' : '单节点'}
-                  </StatusPill>
-                  <StatusPill>{formatProtocol(preferences.protocol)}</StatusPill>
+                  {selectedServerLabel}
                 </div>
               </div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  flexWrap: 'wrap',
+                  gap: '5px',
+                }}>
+                <StatusPill tone={preferences.mode === 'average' ? 'blue' : 'neutral'}>
+                  {preferences.mode === 'average' ? '多节点平均' : '单节点'}
+                </StatusPill>
+                <StatusPill>{formatProtocol(preferences.protocol)}</StatusPill>
+              </div>
             </div>
-          </PanelSectionRow>
+          </div>
+        </PanelSectionRow>
 
-          <MetricsGrid
-            metrics={result}
-            downloadChart={downloadChart}
-            uploadChart={uploadChart}
-          />
+        <MetricsGrid
+          metrics={result}
+          downloadChart={downloadChart}
+          uploadChart={uploadChart}
+        />
 
-          {status === 'running' && (
-            <PhaseProgress progress={progress} label={progressLabel} />
-          )}
+        {status === 'running' && (
+          <PhaseProgress progress={progress} label={progressLabel} />
+        )}
 
-          {status === 'finished' && (
+        {status === 'finished' && (
+          <>
             <PanelSectionRow>
               <div
                 style={{
@@ -316,66 +310,78 @@ function Content() {
                 <span>{formatMeasuredAt(result.measuredAt)}</span>
               </div>
             </PanelSectionRow>
-          )}
+            {failedNodes > 0 && (
+              <PanelSectionRow>
+                <div
+                  style={{
+                    width: '100%',
+                    padding: '7px 9px',
+                    borderRadius: '6px',
+                    color: COLORS.red,
+                    background: `${COLORS.red}12`,
+                    fontSize: '11px',
+                    lineHeight: 1.45,
+                  }}>
+                  {failedNodeNames}连接失败，平均值仅包含成功节点
+                </div>
+              </PanelSectionRow>
+            )}
+          </>
+        )}
 
-          {status === 'error' && (
-            <PanelSectionRow>
-              <div
-                style={{
-                  width: '100%',
-                  padding: '8px 10px',
-                  borderRadius: '6px',
-                  color: COLORS.red,
-                  background: `${COLORS.red}12`,
-                  fontSize: '12px',
-                  lineHeight: 1.45,
-                }}>
-                {errorMessage ?? '测速失败，请检查网络连接'}
-              </div>
-            </PanelSectionRow>
-          )}
-
-          {status === 'idle' && (
-            <PanelSectionRow>
-              <div
-                style={{
-                  width: '100%',
-                  textAlign: 'center',
-                  color: COLORS.muted,
-                  fontSize: '11px',
-                }}>
-                测速会产生较大网络流量，建议停止下载后开始
-              </div>
-            </PanelSectionRow>
-          )}
-
+        {status === 'error' && (
           <PanelSectionRow>
-            <ButtonItem
-              layout="below"
-              onClick={status === 'running' ? stopTest : startTest}>
-              {status === 'running'
-                ? '停止测速'
-                : status === 'finished' || status === 'error'
-                  ? '重新测速'
-                  : '开始测速'}
-            </ButtonItem>
+            <div
+              style={{
+                width: '100%',
+                padding: '8px 10px',
+                borderRadius: '6px',
+                color: COLORS.red,
+                background: `${COLORS.red}12`,
+                fontSize: '12px',
+                lineHeight: 1.45,
+              }}>
+              {errorMessage ?? '测速失败，请检查网络连接'}
+            </div>
           </PanelSectionRow>
-        </PanelSection>
-      )}
+        )}
 
-      {view === 'history' && (
-        <HistoryView history={history} loading={historyLoading} />
-      )}
+        {status === 'idle' && (
+          <PanelSectionRow>
+            <div
+              style={{
+                width: '100%',
+                textAlign: 'center',
+                color: COLORS.muted,
+                fontSize: '11px',
+              }}>
+              测速会产生较大网络流量，建议停止下载后开始
+            </div>
+          </PanelSectionRow>
+        )}
 
-      {view === 'settings' && (
-        <SettingsView
-          preferences={preferences}
-          disabled={status === 'running'}
-          saveError={saveError}
-          version={PLUGIN_VERSION}
-          onChange={updatePreferences}
-        />
-      )}
+        <PanelSectionRow>
+          <ButtonItem
+            layout="below"
+            onClick={status === 'running' ? stopTest : startTest}>
+            {status === 'running'
+              ? '停止测速'
+              : status === 'finished' || status === 'error'
+                ? '重新测速'
+                : '开始测速'}
+          </ButtonItem>
+        </PanelSectionRow>
+      </PanelSection>
+
+      <SettingsView
+        preferences={preferences}
+        disabled={status === 'running'}
+        saveError={saveError}
+        version={PLUGIN_VERSION}
+        onChange={updatePreferences}
+      />
+
+      <HistoryView history={history} loading={historyLoading} />
     </div>
   );
 }

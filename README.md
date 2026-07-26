@@ -4,7 +4,7 @@
 改用国内高校提供的 LibreSpeed 测速节点，并保留适合 Steam Deck 游戏模式的紧凑界面。
 它使用独立的 `decky-speed-test-China` 插件身份，不会覆盖商店中的原版 `Speed Test`。
 
-当前版本：**v2.0.2**
+当前版本：**v2.0.3**
 
 ## 测速节点
 

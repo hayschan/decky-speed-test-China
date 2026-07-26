@@ -85,6 +85,17 @@ const averageBandwidthLatency = (
   key: 'loadedLatency' | 'loadedJitter'
 ): number | null => average(measurements.map((measurement) => measurement[key]));
 
+const friendlyNodeError = (message?: string): string => {
+  if (!message) return '连接失败';
+  if (message.includes('CERTIFICATE_VERIFY_FAILED')) return '证书校验失败';
+  if (message.includes('Network is unreachable')) return '当前网络无法到达';
+  if (message.includes('timed out') || message.includes('Timeout')) return '连接超时';
+  if (message.includes('Name or service not known') || message.includes('nodename')) {
+    return '域名解析失败';
+  }
+  return '连接失败';
+};
+
 export class UniversitySpeedTest {
   private cancelled = false;
 
@@ -141,7 +152,13 @@ export class UniversitySpeedTest {
     const result = aggregateNodes(nodes, this.preferences, measuredAt);
 
     if (successfulNodes.length === 0) {
-      this.callbacks.onError('所有测速节点均连接失败，请稍后重试', result);
+      const reasons = nodes
+        .map(
+          (node) =>
+            `${SERVER_BY_ID[node.serverId].shortName}：${friendlyNodeError(node.error)}`
+        )
+        .join('；');
+      this.callbacks.onError(`所有测速节点均连接失败。${reasons}`, result);
       return;
     }
 

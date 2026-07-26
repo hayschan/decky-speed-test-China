@@ -5,6 +5,7 @@ import sys
 import tempfile
 import types
 import unittest
+from unittest import mock
 
 
 decky_stub = types.SimpleNamespace(
@@ -56,6 +57,50 @@ class BackendTests(unittest.TestCase):
             '"/guard"',
         )
         self.assertIsNone(backend._extract_script_data(page, "missing"))
+
+    def test_ssl_context_uses_the_steamos_ca_bundle(self) -> None:
+        context = object()
+        first_path = backend._SYSTEM_CA_BUNDLE_PATHS[0]
+
+        with mock.patch.object(
+            backend.os.path,
+            "isfile",
+            side_effect=lambda path: path == first_path,
+        ):
+            with mock.patch.object(
+                backend.ssl,
+                "create_default_context",
+                return_value=context,
+            ) as create_context:
+                self.assertIs(backend._create_ssl_context(), context)
+
+        create_context.assert_called_once_with(cafile=first_path)
+
+    def test_ssl_context_falls_back_to_python_defaults(self) -> None:
+        context = object()
+
+        with mock.patch.object(backend.os.path, "isfile", return_value=False):
+            with mock.patch.object(
+                backend.ssl,
+                "create_default_context",
+                return_value=context,
+            ) as create_context:
+                self.assertIs(backend._create_ssl_context(), context)
+
+        create_context.assert_called_once_with()
+
+    def test_nuaa_uses_a_shorter_connection_timeout(self) -> None:
+        ustc_session = backend._NetworkSession("https://test.ustc.edu.cn/")
+        nuaa_session = backend._NetworkSession("http://speed.nuaa.edu.cn/")
+
+        self.assertEqual(
+            ustc_session.timeout_seconds,
+            backend._HTTPS_TIMEOUT_SECONDS,
+        )
+        self.assertEqual(
+            nuaa_session.timeout_seconds,
+            backend._NUAA_TIMEOUT_SECONDS,
+        )
 
     def test_forced_protocol_preferences_remove_unsupported_node(self) -> None:
         preferences = backend._sanitize_preferences(

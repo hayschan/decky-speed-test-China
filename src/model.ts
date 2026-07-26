@@ -3,7 +3,6 @@ export type NetworkProtocol = 'auto' | 'ipv4' | 'ipv6';
 export type TestMode = 'single' | 'average';
 export type TestStatus = 'idle' | 'running' | 'finished' | 'error';
 export type TestPhase = 'idle' | 'latency' | 'download' | 'upload' | 'done';
-export type ViewId = 'test' | 'history' | 'settings';
 
 export interface ServerDefinition {
   id: ServerId;
