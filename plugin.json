@@ -5,7 +5,7 @@
   "api_version": 1,
   "publish": {
     "tags": ["network", "speed", "utility"],
-    "description": "Run internet speed tests directly from your Steam Deck Game Mode using Cloudflare's global network.",
+    "description": "使用中科大、南京大学和南京航空航天大学节点，在 Steam Deck 游戏模式中测试 IPv4 / IPv6 网络速度并保存历史记录。",
     "image": "https://github.com/Dukeman330/decky-speed-test/raw/main/assets/screenshot.jpg"
   }
 }
