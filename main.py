@@ -6,6 +6,7 @@ import hashlib
 import http.cookiejar
 import json
 import os
+import re
 import secrets
 import statistics
 import threading
@@ -14,7 +15,6 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from html.parser import HTMLParser
 from typing import Any
 
 import decky
@@ -61,27 +61,17 @@ _DEFAULT_PREFERENCES = {
 }
 
 
-class _ScriptDataParser(HTMLParser):
-    def __init__(self) -> None:
-        super().__init__()
-        self.values: dict[str, str] = {}
-        self._current_id: str | None = None
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag != "script":
-            return
-        attributes = dict(attrs)
-        self._current_id = attributes.get("id")
-        if self._current_id:
-            self.values[self._current_id] = ""
-
-    def handle_data(self, data: str) -> None:
-        if self._current_id:
-            self.values[self._current_id] += data
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag == "script":
-            self._current_id = None
+def _extract_script_data(page: str, element_id: str) -> str | None:
+    for quote in ('"', "'"):
+        quoted_id = re.escape(f"{quote}{element_id}{quote}")
+        pattern = re.compile(
+            rf"<script\b[^>]*\bid\s*=\s*{quoted_id}[^>]*>(.*?)</script\s*>",
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        match = pattern.search(page)
+        if match:
+            return match.group(1).strip()
+    return None
 
 
 class _NetworkSession:
@@ -144,10 +134,7 @@ class _NetworkSession:
         return urllib.request.Request(url, data=data, headers=request_headers)
 
     def _solve_anubis(self, challenge_page: str) -> None:
-        parser = _ScriptDataParser()
-        parser.feed(challenge_page)
-
-        raw_challenge = parser.values.get("anubis_challenge")
+        raw_challenge = _extract_script_data(challenge_page, "anubis_challenge")
         if not raw_challenge:
             raise RuntimeError("南京大学节点验证页面格式发生变化")
 
@@ -166,7 +153,9 @@ class _NetworkSession:
             nonce += 1
 
         elapsed_ms = max(1, round((time.perf_counter() - started) * 1000))
-        raw_base_prefix = parser.values.get("anubis_base_prefix", '""')
+        raw_base_prefix = (
+            _extract_script_data(challenge_page, "anubis_base_prefix") or '""'
+        )
         base_prefix = json.loads(raw_base_prefix)
         pass_url = urllib.parse.urljoin(
             self.base_url,

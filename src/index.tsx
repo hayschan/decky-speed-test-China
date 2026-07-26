@@ -37,7 +37,7 @@ import {
   getChartData,
 } from './speedtest';
 
-const PLUGIN_VERSION = '2.0.1';
+const PLUGIN_VERSION = '2.0.2';
 
 const phaseLabels: Record<TestPhase, string> = {
   idle: '准备测速',

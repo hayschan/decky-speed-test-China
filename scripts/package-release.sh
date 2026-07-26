@@ -20,6 +20,7 @@ cp dist/index.js dist/index.js.map \
   "${staging_directory}/decky-speed-test-China/dist/"
 
 cd "${staging_directory}"
+rm -f "${archive_path}"
 zip -9 -X -r "${archive_path}" decky-speed-test-China
 
 echo "Created ${archive_path}"

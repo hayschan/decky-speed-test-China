@@ -39,6 +39,24 @@ class BackendTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     backend._resolve_server("nuaa", protocol)
 
+    def test_extracts_anubis_script_data_without_html_parser(self) -> None:
+        page = """
+        <script type="application/json" id="anubis_challenge">
+          {"challenge":{"id":"test"}}
+        </script>
+        <script id='anubis_base_prefix' type='application/json'>"/guard"</script>
+        """
+
+        self.assertEqual(
+            backend._extract_script_data(page, "anubis_challenge"),
+            '{"challenge":{"id":"test"}}',
+        )
+        self.assertEqual(
+            backend._extract_script_data(page, "anubis_base_prefix"),
+            '"/guard"',
+        )
+        self.assertIsNone(backend._extract_script_data(page, "missing"))
+
     def test_forced_protocol_preferences_remove_unsupported_node(self) -> None:
         preferences = backend._sanitize_preferences(
             {
