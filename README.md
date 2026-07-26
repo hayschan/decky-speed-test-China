@@ -3,6 +3,8 @@
 一个面向中国大陆 SteamOS 用户的 Decky 网络测速插件。插件不再依赖 Cloudflare，
 改用国内高校提供的 LibreSpeed 测速节点，并保留适合 Steam Deck 游戏模式的紧凑界面。
 
+当前版本：**v2.0.0**
+
 ## 测速节点
 
 | 节点 | 地址 | IPv4 | IPv6 |
@@ -29,6 +31,11 @@
 ## 安装
 
 通过 [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) 安装。
+
+如需手动安装，请从
+[GitHub Releases](https://github.com/hayschan/decky-speed-test/releases/latest)
+下载 `decky-speed-test-v2.0.0.zip`。压缩包内已包含编译后的前端、Python 后端和插件清单，
+无需在 Steam Deck 上安装 Node.js 或重新编译。
 
 ## 开发
 

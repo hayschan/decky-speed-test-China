@@ -4,7 +4,7 @@
   "description": "Test Steam Deck network performance with university-hosted speed test nodes in mainland China.",
   "type": "module",
   "scripts": {
-    "build": "rollup -c",
+    "build": "rollup -c --forceExit",
     "watch": "rollup -c -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

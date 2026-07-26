@@ -392,8 +392,9 @@ export const SettingsView: FC<{
   preferences: Preferences;
   disabled: boolean;
   saveError: string | null;
+  version: string;
   onChange(preferences: Preferences): void;
-}> = ({ preferences, disabled, saveError, onChange }) => {
+}> = ({ preferences, disabled, saveError, version, onChange }) => {
   const update = (next: Partial<Preferences>) => {
     onChange({ ...preferences, ...next });
   };
@@ -507,6 +508,23 @@ export const SettingsView: FC<{
           <div style={{ fontSize: '12px', lineHeight: 1.55, color: COLORS.muted }}>
             中科大和南大通过独立域名选择 IPv4 / IPv6。南航使用站点默认线路，选择
             IPv6 时会自动排除。多节点采用顺序测速，避免多个节点同时占满带宽而低估结果。
+          </div>
+        </PanelSectionRow>
+      </PanelSection>
+
+      <PanelSection title="关于">
+        <PanelSectionRow>
+          <div
+            style={{
+              width: '100%',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '12px',
+            }}>
+            <span>高校测速</span>
+            <StatusPill>{`v${version}`}</StatusPill>
           </div>
         </PanelSectionRow>
       </PanelSection>

@@ -37,6 +37,8 @@ import {
   getChartData,
 } from './speedtest';
 
+const PLUGIN_VERSION = '2.0.0';
+
 const phaseLabels: Record<TestPhase, string> = {
   idle: '准备测速',
   latency: '正在测试延迟',
@@ -370,6 +372,7 @@ function Content() {
           preferences={preferences}
           disabled={status === 'running'}
           saveError={saveError}
+          version={PLUGIN_VERSION}
           onChange={updatePreferences}
         />
       )}
