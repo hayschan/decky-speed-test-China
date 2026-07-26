@@ -37,7 +37,7 @@ import {
   getChartData,
 } from './speedtest';
 
-const PLUGIN_VERSION = '2.0.0';
+const PLUGIN_VERSION = '2.0.1';
 
 const phaseLabels: Record<TestPhase, string> = {
   idle: '准备测速',
@@ -384,7 +384,7 @@ export default definePlugin(() => {
   console.log('University Speed Test plugin initializing');
 
   return {
-    name: '高校测速',
+    name: 'decky-speed-test-China',
     titleView: <div className={staticClasses.Title}>高校测速</div>,
     content: <Content />,
     icon: <FaNetworkWired />,

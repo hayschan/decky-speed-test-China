@@ -1,16 +1,17 @@
 {
-  "name": "decky-speed-test",
-  "version": "2.0.0",
+  "name": "decky-speed-test-china",
+  "version": "2.0.1",
   "description": "Test Steam Deck network performance with university-hosted speed test nodes in mainland China.",
   "type": "module",
   "scripts": {
     "build": "rollup -c --forceExit",
+    "package": "bash scripts/package-release.sh",
     "watch": "rollup -c -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Dukeman330/decky-speed-test.git"
+    "url": "git+https://github.com/hayschan/decky-speed-test-China.git"
   },
   "keywords": [
     "decky",
@@ -22,9 +23,9 @@
   "author": "Chris Garson",
   "license": "BSD-3-Clause",
   "bugs": {
-    "url": "https://github.com/Dukeman330/decky-speed-test/issues"
+    "url": "https://github.com/hayschan/decky-speed-test-China/issues"
   },
-  "homepage": "https://github.com/Dukeman330/decky-speed-test#readme",
+  "homepage": "https://github.com/hayschan/decky-speed-test-China#readme",
   "devDependencies": {
     "@decky/rollup": "^1.0.2",
     "@decky/ui": "^4.11.0",
