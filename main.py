@@ -363,6 +363,13 @@ class Plugin:
             size_megabytes,
         )
 
+    async def warm_up_download(self, server_id: str, protocol: str) -> None:
+        await self._run_in_thread(
+            self._warm_up_download_sync,
+            server_id,
+            protocol,
+        )
+
     async def measure_upload_sample(
         self, server_id: str, protocol: str, size_megabytes: float
     ) -> dict[str, Any]:
@@ -395,6 +402,12 @@ class Plugin:
             "publicIp": public_ip,
             "protocol": effective_protocol,
         }
+
+    def _warm_up_download_sync(self, server_id: str, protocol: str) -> None:
+        base_url, _ = _resolve_server(server_id, protocol)
+        session = self._get_session(base_url)
+        session.ensure_ready()
+        self._download_once(session, base_url, 1)
 
     def _measure_download_sync(
         self, server_id: str, protocol: str, size_megabytes: float
@@ -507,9 +520,11 @@ class Plugin:
     ) -> tuple[int, float]:
         endpoint = urllib.parse.urljoin(base_url, "backend/garbage.php")
         url = _with_cache_buster(endpoint, cors="true", ckSize=size_megabytes)
-        started = time.perf_counter()
         try:
             with session.open(url) as response:
+                # Exclude DNS, TCP/TLS setup and server response latency. The
+                # bandwidth sample should measure only delivery of the body.
+                started = time.perf_counter()
                 body = _read_response(response, require_binary=True)
         except urllib.error.HTTPError as error:
             raise RuntimeError(f"下载接口返回 HTTP {error.code}") from error

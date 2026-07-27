@@ -102,6 +102,66 @@ class BackendTests(unittest.TestCase):
             backend._NUAA_TIMEOUT_SECONDS,
         )
 
+    def test_download_warmup_uses_one_unrecorded_megabyte(self) -> None:
+        session = mock.Mock()
+
+        with mock.patch.object(
+            self.plugin,
+            "_get_session",
+            return_value=session,
+        ) as get_session:
+            with mock.patch.object(
+                self.plugin,
+                "_download_once",
+                return_value=(1024 * 1024, 100.0),
+            ) as download_once:
+                self.plugin._warm_up_download_sync("ustc", "ipv4")
+
+        get_session.assert_called_once_with("https://test.ustc.edu.cn/")
+        session.ensure_ready.assert_called_once_with()
+        download_once.assert_called_once_with(
+            session,
+            "https://test.ustc.edu.cn/",
+            1,
+        )
+
+    def test_download_timing_excludes_connection_setup(self) -> None:
+        events: list[str] = []
+        response = mock.MagicMock()
+        response.headers = {"Content-Type": "application/octet-stream"}
+        response.read.side_effect = [b"download-data", b""]
+
+        context_manager = mock.MagicMock()
+        context_manager.__enter__.return_value = response
+        session = mock.Mock()
+
+        def open_response(url: str) -> mock.MagicMock:
+            events.append("open")
+            return context_manager
+
+        timer_values = iter((10.0, 10.5))
+
+        def perf_counter() -> float:
+            self.assertEqual(events[0], "open")
+            events.append("timer")
+            return next(timer_values)
+
+        session.open.side_effect = open_response
+        with mock.patch.object(
+            backend.time,
+            "perf_counter",
+            side_effect=perf_counter,
+        ):
+            byte_count, duration = self.plugin._download_once(
+                session,
+                "https://test.ustc.edu.cn/",
+                1,
+            )
+
+        self.assertEqual(byte_count, len(b"download-data"))
+        self.assertEqual(duration, 500.0)
+        self.assertEqual(events, ["open", "timer", "timer"])
+
     def test_forced_protocol_preferences_remove_unsupported_node(self) -> None:
         preferences = backend._sanitize_preferences(
             {

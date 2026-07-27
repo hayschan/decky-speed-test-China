@@ -11,7 +11,12 @@ import {
   TestPhase,
   createEmptyResult,
 } from './model';
-import { measureDownloadSample, measureLatency, measureUploadSample } from './backend';
+import {
+  measureDownloadSample,
+  measureLatency,
+  measureUploadSample,
+  warmUpDownload,
+} from './backend';
 
 const DOWNLOAD_SIZES_MB = [1, 4, 8];
 const UPLOAD_SIZES_MB = [0.25, 1, 4];
@@ -196,6 +201,11 @@ export class UniversitySpeedTest {
     node.publicIp = latency.publicIp;
     node.protocol = latency.protocol;
     this.emitProgress(nodes, 'latency', node.serverId, serverIndex, totalServers, 1 / 7);
+
+    // Prime the server data path and the device network stack without allowing
+    // cold-start setup costs to lower the recorded download result.
+    await warmUpDownload(node.serverId, this.preferences.protocol);
+    this.throwIfCancelled();
 
     const downloadMeasurements: BandwidthMeasurement[] = [];
     for (let index = 0; index < DOWNLOAD_SIZES_MB.length; index += 1) {

@@ -24,6 +24,11 @@ export const measureDownloadSample = callable<
   BandwidthMeasurement
 >('measure_download_sample');
 
+export const warmUpDownload = callable<
+  [serverId: ServerId, protocol: NetworkProtocol],
+  void
+>('warm_up_download');
+
 export const measureUploadSample = callable<
   [serverId: ServerId, protocol: NetworkProtocol, sizeMegabytes: number],
   BandwidthMeasurement
